@@ -1,17 +1,17 @@
-// Require necessary packages
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-require('dotenv').config(); // Load environment variables
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.REACT_APP_SERVER_URL, // Update this if necessary
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: process.env.REACT_APP_SERVER_URL,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Ensure OPTIONS is included
+  allowedHeaders: ['Content-Type', 'Authorization'], // Include any other headers your API might use
   credentials: true,
 };
 
@@ -30,13 +30,11 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
   })
   .catch(err => console.error(err));
 
-// API Routes
+// Define your routes here
 const loginRoutes = require('./routes/login');
 const registrationRoutes = require('./routes/registration');
 const userRoutes = require('./routes/user');
 
-// Handle OPTIONS method for specific routes
-app.options('/api/login', cors(corsOptions)); // Allow OPTIONS for /api/login
 app.use('/api/login', loginRoutes);
 app.use('/api/registrations', registrationRoutes);
 app.use('/api/users', userRoutes);
