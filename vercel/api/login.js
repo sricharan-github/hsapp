@@ -1,38 +1,34 @@
-const express = require('express');
+// api/login.js
+const mongoose = require('mongoose');
+const User = require('../models/User'); // Adjust the path based on your structure
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const connectDB = require('../utils/connectDB');
 
-const router = express.Router();
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
-// Database connection
-connectDB();
+module.exports = async (req, res) => {
+  console.log("Request Method:", req.method);
+  console.log("Request Body:", req.body);
+  if (req.method === 'POST') {
+    try {
+      const { username, password } = req.body;
+      const user = await User.findOne({ username });
 
-const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-};
+      if (!user) {
+        return res.status(400).json({ message: 'User not found' });
+      }
 
-router.post('/', async (req, res) => {
-  const { username, password } = req.body;
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Invalid credentials' });
+      }
 
-  try {
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      res.json({ message: 'Login successful' });
+    } catch (error) {
+      console.error("Error:", error); // Log the error for debugging
+      res.status(500).json({ message: 'Server error' });
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const token = generateToken(user._id, user.role);
-    res.json({ token, role: user.role });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+  } else {
+    res.setHeader('Allow', ['POST']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
-});
-
-module.exports = router;
+};
